@@ -86,12 +86,14 @@ def main():
         if name is not None and x['name'] != name:
             continue
 
-        if not details:
-            ans.append({'name': x['name'], 'id': x['id']})
-            continue
+        val = None
+        if details:
+            path = ['cloud', 'group', x['id']]
+            val = client.get(path)
+        else:
+            val = pc.hide_details(x, ['name', 'id'])
 
-        path = ['cloud', 'group', x['id']]
-        ans.append(client.get(path))
+        ans.append(val)
 
     module.exit_json(changed=False, total=len(listing), listing=ans)
 
