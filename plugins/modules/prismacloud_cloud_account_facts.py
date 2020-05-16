@@ -100,12 +100,14 @@ def main():
         if cloud_type is not None and x['cloudType'] != cloud_type:
             continue
 
-        if not details:
-            ans.append(x)
-            continue
+        val = None
+        if details:
+            path = ['cloud', x['cloudType'], x['id']]
+            val = client.get(path)
+        else:
+            val = pc.hide_details(x, ['cloud', 'cloudType', 'id'])
 
-        path = ['cloud', x['cloudType'], x['id']]
-        ans.append(client.get(path))
+        ans.append(val)
 
     module.exit_json(changed=False, total=len(listing), listing=ans)
 
