@@ -62,3 +62,6 @@ class PrismaCloudRequest(object):
 
 def details_spec():
     return dict(type='bool', default=False)
+
+def hide_details(val, fields):
+    return dict((x, val.get(x)) for x in fields)
