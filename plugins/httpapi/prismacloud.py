@@ -70,7 +70,7 @@ class HttpApi(HttpApiBase):
 
         if code != 200:
             err_loc = 'X-Redlock-Status'
-            err_val = resp.get_header(err_loc)
+            err_val = resp.getheader(err_loc)
             if err_val is None:
                 raise ConnectionError('{0} header is missing, is this Prisma Cloud?\n{1}'.format(err_loc, body))
             errinfo = json.loads(err_val)
@@ -79,12 +79,15 @@ class HttpApi(HttpApiBase):
                 '(prismacloud) error: {0}'.format(errinfo),
             )
 
+
             # Only ever seen one error at a time, but it's still a list, so....
             for x in errinfo:
                 if x['i18nKey'].endswith('_already_exists'):
-                    raise errors.AlreadyExistsError("object already exists")
+                    raise errors.AlreadyExistsError("object already exists", errinfo)
                 elif x['i18nKey'] in ('invalid_id', 'not_found'):
-                    raise errors.ObjectNotFoundError("object not found")
+                    raise errors.ObjectNotFoundError("object not found", errinfo)
+                elif x['i18nKey'] == 'invalid_credentials':
+                    raise errors.AuthenticationError("invalid credentials provided", errinfo)
             else:
                 raise errors.PrismaCloudError("error", errinfo)
 
