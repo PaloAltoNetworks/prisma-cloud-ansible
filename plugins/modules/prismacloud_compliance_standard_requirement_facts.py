@@ -34,14 +34,18 @@ version_added: "2.9"
 extends_documentation_fragment:
     - paloaltonetworks.prismacloud.fragments.facts
 options:
-    cs_id:
+    complianceId:
         description:
             - The compliance standard ID.
         required: true
+    id:
+        description:
+            - Specific compliance standard requirement ID.
     name:
         description:
             - Filter on compliance standard requirements with this name.
-    system_default:
+            - Primary param.
+    systemDefault:
         description:
             - Filter on a specific system default setting.
         type: bool
@@ -75,42 +79,28 @@ from ansible_collections.paloaltonetworks.prismacloud.plugins.module_utils impor
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            cs_id=dict(required=True),
+            complianceId=dict(required=True),
             name=dict(),
-            system_default=dict(type='bool'),
+            id=dict(),
+            systemDefault=dict(type='bool'),
             details=pc.details_spec(),
+            search_type=pc.search_type_spec(),
         ),
         supports_check_mode=False,
     )
 
     client = pc.PrismaCloudRequest(module)
 
-    cs_id = module.params['cs_id']
-    name = module.params['name']
-    system_default = module.params['system_default']
-    details = module.params['details']
-
-    path = ['compliance', cs_id, 'requirement']
+    path = ['compliance', module.params['complianceId'], 'requirement']
     listing = client.get(path)
 
-    ans = []
-    for x in listing:
-        if name is not None and x['name'] != name:
-            continue
+    results = client.get_facts_from(
+        listing,
+        'name', ['systemDefault', 'id'],
+        ['compliance', 'requirement', 'id'], (2, ),
+    )
 
-        if system_default is not None and x['systemDefault'] != system_default:
-            continue
-
-        val = None
-        if details:
-            path = ['compliance', 'requirement', x['id']]
-            val = client.get(path)
-        else:
-            val = pc.hide_details(x, ['name', 'id', 'systemDefault'])
-
-        ans.append(val)
-
-    module.exit_json(changed=False, total=len(listing), listing=ans)
+    module.exit_json(changed=False, **results)
 
 
 if __name__ == '__main__':
