@@ -37,6 +37,10 @@ options:
     name:
         description:
             - Filter on account groups with this name.
+            - Primary param.
+    id:
+        description:
+            - Specific account group ID.
 '''
 
 EXAMPLES = '''
@@ -68,34 +72,25 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(),
+            id=dict(),
             details=pc.details_spec(),
+            search_type=pc.search_type_spec(),
         ),
         supports_check_mode=False,
     )
 
     client = pc.PrismaCloudRequest(module)
 
-    name = module.params['name']
-    details = module.params['details']
-
     path = ['cloud', 'group']
     listing = client.get(path)
 
-    ans = []
-    for x in listing:
-        if name is not None and x['name'] != name:
-            continue
+    results = client.get_facts_from(
+        listing,
+        'name', ['id', ],
+        ['cloud', 'group', 'id'], (2, ),
+    )
 
-        val = None
-        if details:
-            path = ['cloud', 'group', x['id']]
-            val = client.get(path)
-        else:
-            val = pc.hide_details(x, ['name', 'id'])
-
-        ans.append(val)
-
-    module.exit_json(changed=False, total=len(listing), listing=ans)
+    module.exit_json(changed=False, **results)
 
 
 if __name__ == '__main__':
