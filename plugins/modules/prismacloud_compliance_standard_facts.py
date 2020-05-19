@@ -37,11 +37,14 @@ options:
     name:
         description:
             - Filter on compliance standards with this name.
-    cloud_types:
+            - Primary param.
+    id:
         description:
-            - Filter on the specified cloud types.
-        type: list
-    system_default:
+            - Specific compliance standard ID.
+    cloudType:
+        description:
+            - Filter on the specified cloud type.
+    systemDefault:
         description:
             - Filter on a specific system default setting.
         type: bool
@@ -76,44 +79,27 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(),
-            cloud_types=dict(type='list'),
-            system_default=dict(type='bool'),
+            id=dict(),
+            cloudType=dict(type='list'),
+            systemDefault=dict(type='bool'),
             details=pc.details_spec(),
+            search_type=pc.search_type_spec(),
         ),
         supports_check_mode=False,
     )
 
     client = pc.PrismaCloudRequest(module)
 
-    name = module.params['name']
-    cloud_types = module.params['cloud_types']
-    system_default = module.params['system_default']
-    details = module.params['details']
-
     path = ['compliance', ]
     listing = client.get(path)
 
-    ans = []
-    for x in listing:
-        if name is not None and x['name'] != name:
-            continue
+    results = client.get_facts_from(
+        listing,
+        'name', ['id', 'cloudType', 'systemDefault'],
+        ['compliance', 'id'], (1, ),
+    )
 
-        if cloud_types is not None and set(cloud_types).isdisjoint(set(x['cloudType'])):
-            continue
-
-        if system_default is not None and x['systemDefault'] != system_default:
-            continue
-
-        val = None
-        if details:
-            path = ['compliance', x['id']]
-            val = client.get(path)
-        else:
-            val = pc.hide_details(x, ['name', 'id', 'cloudType', 'systemDefault'])
-
-        ans.append(val)
-
-    module.exit_json(changed=False, total=len(listing), listing=ans)
+    module.exit_json(changed=False, **results)
 
 
 if __name__ == '__main__':
