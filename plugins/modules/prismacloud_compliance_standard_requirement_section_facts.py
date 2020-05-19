@@ -31,17 +31,18 @@ description:
 author:
     - Garfield Lee Freeman (@shinmog)
 version_added: "2.9"
-notes:
-    - As this is a facts module, check mode is not supported.
+extends_documentation_fragment:
+    - paloaltonetworks.prismacloud.fragments.facts_without_details
 options:
-    csr_id:
+    requirementId:
         description:
             - The compliance standard requirement ID.
         required: true
-    section_id:
+    sectionId:
         description:
             - Filter on the given section ID.
-    system_default:
+            - Primary param.
+    systemDefault:
         description:
             - Filter on a specific system default setting.
         type: bool
@@ -75,33 +76,25 @@ from ansible_collections.paloaltonetworks.prismacloud.plugins.module_utils impor
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            csr_id=dict(required=True),
-            section_id=dict(),
-            system_default=dict(type='bool'),
+            requirementId=dict(required=True),
+            sectionId=dict(),
+            systemDefault=dict(type='bool'),
+            search_type=pc.search_type_spec(),
         ),
         supports_check_mode=False,
     )
 
     client = pc.PrismaCloudRequest(module)
 
-    csr_id = module.params['csr_id']
-    section_id = module.params['section_id']
-    system_default = module.params['system_default']
-
-    path = ['compliance', csr_id, 'section']
+    path = ['compliance', module.params['requirementId'], 'section']
     listing = client.get(path)
 
-    ans = []
-    for x in listing:
-        if section_id is not None and x['sectionId'] != section_id:
-            continue
+    results = client.get_facts_from(
+        listing,
+        'sectionId', ['systemDefault', ],
+    )
 
-        if system_default is not None and x['systemDefault'] != system_default:
-            continue
-
-        ans.append(x)
-
-    module.exit_json(changed=False, total=len(listing), listing=ans)
+    module.exit_json(changed=False, **results)
 
 
 if __name__ == '__main__':
