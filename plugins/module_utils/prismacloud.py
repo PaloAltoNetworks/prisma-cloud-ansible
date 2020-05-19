@@ -19,6 +19,8 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 
+import re
+
 from ansible_collections.paloaltonetworks.prismacloud.plugins.module_utils import errors
 from ansible.module_utils._text import to_text
 from ansible.module_utils.connection import Connection
@@ -60,8 +62,56 @@ class PrismaCloudRequest(object):
     def delete(self, path):
         return self.send_request('DELETE', path)
 
+    def get_facts_from(self, listing, primary_field, fields, details_path=None, dynamic_path_indexes=None):
+        """Returns facts for the given listing.
+
+        Args:
+            details_path (list): List of the path to query to get details.
+        """
+        ans = []
+        search_type = self.module.params['search_type']
+        details = self.module.params.get('details')
+
+        for item in listing:
+            if self.module.params[primary_field] is not None:
+                val = self.module.params[primary_field]
+                if search_type == 'exact':
+                    if item[primary_field] != val:
+                        continue
+                elif search_type == 'substring':
+                    if val not in item[primary_field]:
+                        continue
+                elif search_type == 'regex':
+                    if not re.search(val, item[primary_field]):
+                        continue
+
+            include_item = True
+            for field in fields:
+                val = self.module.params.get(field)
+                if val is not None and item.get(field) != val:
+                    include_item = False
+                    break
+
+            if include_item:
+                if details is None:
+                    ans.append(item)
+                elif not self.module.params.get('details', False):
+                    ans.append(dict((field, item[field]) for field in fields))
+                else:
+                    path = []
+                    for num, p in enumerate(details_path):
+                        if num in dynamic_path_indexes:
+                            path.append('{0}'.format(item[p]))
+                        else:
+                            path.append(p)
+                    ans.append(self.get(path))
+
+        return {'listing': ans, 'total': len(ans)}
+
+
+def search_type_spec():
+    return dict(default='exact', choices=['exact', 'substring', 'regex'])
+
+
 def details_spec():
     return dict(type='bool', default=False)
-
-def hide_details(val, fields):
-    return dict((x, val.get(x)) for x in fields)
