@@ -28,7 +28,7 @@ class PrismaCloudError(Exception):
     def __str__(self):
         ans = super(PrismaCloudError, self).__str__()
 
-        if errlist:
+        if self.errlist:
             ans += ': {0}'.format(
                 self.errlist[0] if len(self.errlist) == 1 else self.errlist
             )
