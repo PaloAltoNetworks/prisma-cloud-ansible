@@ -101,7 +101,7 @@ def main():
         ['cloud', 'cloudType', 'id'], (1, 2),
     )
 
-    module.exit_json(changed=False, **results)
+    module.exit_json(**results)
 
 
 if __name__ == '__main__':

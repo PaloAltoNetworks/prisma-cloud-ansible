@@ -45,6 +45,8 @@ class PrismaCloudRequest(object):
             self.module.fail_json(msg="certificate error occurred: {0}".format(e))
         except ValueError as e:
             self.module.fail_json(msg="certificate not found: {0}".format(e))
+        except errors.ObjectNotFoundError:
+            raise
         except errors.PrismaCloudError as e:
             self.module.fail_json(msg='{0}'.format(e))
 
@@ -106,7 +108,7 @@ class PrismaCloudRequest(object):
                             path.append(p)
                     ans.append(self.get(path))
 
-        return {'listing': ans, 'total': len(ans)}
+        return {'changed': False, 'listing': ans, 'total': len(ans)}
 
 
 def search_type_spec():
@@ -115,3 +117,10 @@ def search_type_spec():
 
 def details_spec():
     return dict(type='bool', default=False)
+
+
+def state_spec():
+    return dict(
+        default='present',
+        choices=['present', 'absent'],
+    )

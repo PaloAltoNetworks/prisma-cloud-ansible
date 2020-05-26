@@ -115,7 +115,7 @@ def main():
         ['policy', 'policyId'], (1, ),
     )
 
-    module.exit_json(changed=False, **results)
+    module.exit_json(**results)
 
 
 if __name__ == '__main__':
