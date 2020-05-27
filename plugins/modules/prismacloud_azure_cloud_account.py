@@ -34,26 +34,31 @@ version_added: "2.9"
 extends_documentation_fragment:
     - paloaltonetworks.prismacloud.fragments.state
 options:
-    accountId:
+    cloudAccount:
         description:
-            - Azure account ID.
-            - Either the accountId or the name must be specified.
-    enabled:
-        description:
-            - Whether or not the account is enabled.
-        type: bool
+            - Cloud account definition.
+        type: complex
+        suboptions:
+            accountId:
+                description:
+                    - Azure account ID.
+                    - Either the accountId or the name must be specified.
+            enabled:
+                description:
+                    - Whether or not the account is enabled.
+                type: bool
+            groupIds:
+                description:
+                    - List of account group IDs to which you are assigning this account.
+                type: list
+            name:
+                description:
+                    - Name to be used for the account on the Prisma Cloud platform.
+                    - Must be unique.
+                    - Either the accountId or the name must be specified.
     clientId:
         description:
             - Application ID registered with Active Directory.
-    groupIds:
-        description:
-            - List of account group IDs to which you are assigning this account.
-        type: list
-    name:
-        description:
-            - Name to be used for the account on the Prisma Cloud platform.
-            - Must be unique.
-            - Either the accountId or the name must be specified.
     key:
         description:
             - Application ID key.
@@ -73,8 +78,9 @@ options:
 EXAMPLES = '''
 - name: add azure accont
   prismacloud_azure_cloud_account:
-    name: 'foo'
-    enabled: true
+    cloudAccount:
+      name: 'foo'
+      enabled: true
     cliendId: 'myId'
     key: 'myAppKey'
     tenantId: 'myTenantId'
@@ -112,20 +118,26 @@ def identify(client, name):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            accountId=dict(),
-            enabled=dict(type='bool'),
+            cloudAccount=dict(
+                required=True,
+                type='dict',
+                required_one_of=[
+                    ['accountId', 'name'],
+                ],
+                options=dict(
+                    accountId=dict(),
+                    enabled=dict(type='bool'),
+                    groupIds=dict(type='list'),
+                    name=dict(),
+                ),
+            ),
             clientId=dict(),
-            groupIds=dict(type='list'),
-            name=dict(),
             key=dict(),
             monitorFlowLogs=dict(type='bool'),
             tenantId=dict(),
             servicePrincipalId=dict(),
             state=pc.state_spec(),
         ),
-        required_one_of=[
-            ['accountId', 'name'],
-        ],
         supports_check_mode=True,
     )
 
@@ -136,13 +148,13 @@ def main():
     results = {'changed': False}
 
     # Retrieve obj details.
-    if module.params['accountId'] is not None:
+    if module.params['cloudAccount']['accountId'] is not None:
         try:
-            obj = client.get(['cloud', 'azure', module.params['accountId']])
+            obj = client.get(['cloud', 'azure', module.params['cloudAccount']['accountId']])
         except errors.ObjectNotFoundError:
             pass
     else:
-        the_id = identify(client, module.params['name'])
+        the_id = identify(client, module.params['cloudAccount']['name'])
         if the_id is not None:
             obj = client.get(['cloud', 'azure', the_id])
 
@@ -166,9 +178,10 @@ def main():
         }
         for field in fields:
             if field == 'cloudAccount':
+                ca = module.params['cloudAccount']
                 for ca_field in ca_fields:
-                    if module.params[ca_field] is not None:
-                        req_obj[field][ca_field] = module.params[ca_field]
+                    if ca[ca_field] is not None:
+                        req_obj[field][ca_field] = ca[ca_field]
             elif module.params[field] is not None:
                 req_obj[field] = module.params[field]
 
@@ -176,7 +189,7 @@ def main():
             results['changed'] = True
             if not module.check_mode:
                 client.post(['cloud', 'azure'], req_obj)
-                req_obj['cloudAccount']['accountId'] = identify(client, module.params['name'])
+                req_obj['cloudAccount']['accountId'] = identify(client, module.params['cloudAccount']['name'])
         else:
             for field in fields:
                 if obj.get(field) != req_obj.get(field):
