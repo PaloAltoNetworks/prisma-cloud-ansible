@@ -48,6 +48,7 @@ options:
     groupIds:
         description:
             - List of account group IDs to which you are assigning this account.
+        type: list
     name:
         description:
             - Name to be used for the account on the Prisma Cloud platform.
