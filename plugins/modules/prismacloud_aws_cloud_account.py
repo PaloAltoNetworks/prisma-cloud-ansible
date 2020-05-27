@@ -24,10 +24,10 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 
 DOCUMENTATION = '''
 ---
-module: prismacloud_cloud_account
-short_description: Manage a cloud account onboarded to Prisma Cloud.
+module: prismacloud_aws_cloud_account
+short_description: Manage an AWS cloud account onboarded to Prisma Cloud.
 description:
-    - Manage a cloud account onboarded to Prisma Cloud.
+    - Manage an AWS cloud account onboarded to Prisma Cloud.
 author:
     - Garfield Lee Freeman (@shinmog)
 version_added: "2.9"
