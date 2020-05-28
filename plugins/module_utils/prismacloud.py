@@ -98,7 +98,9 @@ class PrismaCloudRequest(object):
                 if details is None:
                     ans.append(item)
                 elif not self.module.params.get('details', False):
-                    ans.append(dict((field, item[field]) for field in fields))
+                    d = dict((field, item[field]) for field in fields)
+                    d[primary_field] = item[primary_field]
+                    ans.append(d)
                 else:
                     path = []
                     for num, p in enumerate(details_path):
