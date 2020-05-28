@@ -54,6 +54,7 @@ options:
         description:
             - Whether or not the account is enabled.
         type: bool
+        default: false
 '''
 
 EXAMPLES = '''
@@ -130,11 +131,11 @@ def main():
     if module.params['state'] == 'present':
         fields = ['accountId', 'enabled', 'groupIds', 'name', 'ramArn']
         req_obj = {
-            "accountId": "",
-            "groupIds": [],
-            "name": "",
-            "enabled": False,
-            "ramArn": "",
+            'accountId': '',
+            'groupIds': [],
+            'name': '',
+            'enabled': False,
+            'ramArn': '',
         }
         for field in fields:
             if module.params[field] is not None:
