@@ -47,6 +47,7 @@ options:
                 description:
                     - Whether or not the account is enabled.
                 type: bool
+                default: false
             groupIds:
                 description:
                     - List of account group IDs to which you are assigning this account.
@@ -152,7 +153,7 @@ def main():
                 ],
                 options=dict(
                     accountId=dict(),
-                    enabled=dict(type='bool'),
+                    enabled=dict(type='bool', default=False),
                     groupIds=dict(type='list'),
                     name=dict(),
                 ),
@@ -199,14 +200,15 @@ def main():
 
     results['before'] = obj
 
+    fields = ['cloudAccount', 'credentials', 'compressionEnabled', 'dataflowEnabledProject', 'flowLogStorageBucket']
+    ca_fields = ['accountId', 'enabled', 'groupIds', 'name']
+    c_fields = [
+        'type', 'project_id', 'private_key_id', 'private_key', 'client_email',
+        'client_id', 'auth_uri', 'token_uri',
+        'auth_provider_x509_cert_url', 'client_x509_cert_url',
+    ]
+
     if module.params['state'] == 'present':
-        fields = ['cloudAccount', 'credentials', 'compressionEnabled', 'dataflowEnabledProject', 'flowLogStorageBucket']
-        ca_fields = ['accountId', 'enabled', 'groupIds', 'name']
-        c_fields = [
-            'type', 'project_id', 'private_key_id', 'private_key', 'client_email',
-            'client_id', 'auth_uri', 'token_uri',
-            'auth_provider_x509_cert_url', 'client_x509_cert_url',
-        ]
         req_obj = {
             'cloudAccount': {
                 'accountId': '',
@@ -214,20 +216,19 @@ def main():
                 'groupIds': [],
                 'name': '',
             },
-            "compressionEnabled": false,
-            "dataflowEnabledProject": "",
-            "flowLogStorageBucket": "",
-            "credentials": {
-                "type": "",
-                "project_id": "",
-                "private_key_id": "",
-                "private_key": "",
-                "client_email": "",
-                "client_id": "",
-                "auth_uri": "",
-                "token_uri": "",
-                "auth_provider_x509_cert_url": "",
-                "client_x509_cert_url": "",
+            'compressionEnabled': False,
+            'flowLogStorageBucket': '',
+            'credentials': {
+                'type': '',
+                'project_id': '',
+                'private_key_id': '',
+                'private_key': '',
+                'client_email': '',
+                'client_id': '',
+                'auth_uri': '',
+                'token_uri': '',
+                'auth_provider_x509_cert_url': '',
+                'client_x509_cert_url': '',
             },
         }
         for field in fields:
@@ -253,8 +254,19 @@ def main():
             if not req_obj['cloudAccount']['accountId']:
                 req_obj['cloudAccount']['accountId'] = obj['cloudAccount']['accountId']
             for field in fields:
-                if obj.get(field) != req_obj.get(field):
+                if field == 'cloudAccount':
+                    for ca_field in ca_fields:
+                        if obj.get(field, {}).get(ca_field) != req_obj.get(field, {}).get(ca_field):
+                            results['changed'] = True
+                            break
+                elif field == 'credentials':
+                    for c_field in c_fields:
+                        if obj.get(field, {}).get(c_field) != req_obj.get(field, {}).get(c_field):
+                            results['changed'] = True
+                            break
+                elif obj.get(field) != req_obj.get(field):
                     results['changed'] = True
+                if results['changed']:
                     if not module.check_mode:
                         client.put(['cloud', 'gcp', req_obj['cloudAccount']['accountId']], req_obj)
                     break
