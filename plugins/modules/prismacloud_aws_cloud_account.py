@@ -133,7 +133,7 @@ def main():
     results['before'] = obj
 
     if module.params['state'] == 'present':
-        fields = ['enabled', 'externalId', 'groupIds', 'name', 'roleArn']
+        fields = ['accoundId', 'enabled', 'externalId', 'groupIds', 'name', 'roleArn']
         req_obj = {
             'accountId': '',
             'enabled': False,
@@ -152,11 +152,11 @@ def main():
                 client.post(['cloud', 'aws'], req_obj)
                 req_obj['accountId'] = identify(client, req_obj['name'])
         else:
+            if not req_obj['accountId']:
+                req_obj['accountId'] = obj['accountId']
             for field in fields:
                 if obj.get(field) != req_obj.get(field):
                     results['changed'] = True
-                    if not req_obj['accountId'] and obj is not None and obj.get('accountId'):
-                        req_obj['accoundId'] = obj['accountId']
                     if not module.check_mode:
                         client.put(['cloud', 'aws', req_obj['accountId']], req_obj)
                     break
