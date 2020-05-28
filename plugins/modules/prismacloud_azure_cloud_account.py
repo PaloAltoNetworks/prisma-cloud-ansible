@@ -191,11 +191,11 @@ def main():
                 client.post(['cloud', 'azure'], req_obj)
                 req_obj['cloudAccount']['accountId'] = identify(client, module.params['cloudAccount']['name'])
         else:
+            if not req_obj['cloudAccount']['accountId']:
+                req_obj['cloudAccount']['accountId'] = obj['cloudAccount']['accountId']
             for field in fields:
                 if obj.get(field) != req_obj.get(field):
                     results['changed'] = True
-                    if not req_obj['cloudAccount']['accountId'] and obj is not None:
-                        req_obj['cloudAccount']['accountId'] = obj['cloudAccount']['accountId']
                     if not module.check_mode:
                         client.put(['cloud', 'azure', req_obj['cloudAccount']['accountId']], req_obj)
                     break
